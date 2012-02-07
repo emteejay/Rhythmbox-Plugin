@@ -33,7 +33,7 @@ from lcdproc.server import Server
 from socket import error as SocketError
 
 # ============================ Configuration Data ============================ #
-
+# Where the LCD display server daemon is running
 LCDPROC_HOST = 'LiFi.local'
 
 # If your LCD has a keypad this dictionary specifies the keys of interest
@@ -68,7 +68,8 @@ keyUse = {
     "Stop":"sp.stop()"
 }
 
-# The picoLCD has five keys below the display, These symbols indicate the functions they perform.
+# If your display has keys these symbols indicate the functions they perform.
+# The picoLCD has five keys below the display. 
 KEY_LABELS = "|<<  ||  []   >  >>|"
 SHOW_LABELS = True
 
@@ -109,6 +110,7 @@ class LCDprocPlugin(rb.Plugin):
         try:
             self.lcd = Server(LCDPROC_HOST) #, debug=True)
         except SocketError:
+            print "Failed to connect to LCDd"
             return False
         self.lcd.start_session()
         self.screen1 = self.lcd.add_screen("Rhythmbox")
