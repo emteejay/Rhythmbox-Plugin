@@ -1,0 +1,6 @@
+h1. Rhythmbox Plugins
+
+h2. LCDProc
+
+This plugin enables the "Rhythmbox":http://projects.gnome.org/rhythmbox music player to output information about the currently playing track to any display supported by the "LCDproc":http://lcdproc.org driver. It allows Rhythmbox to be controlled by any keypad or infra-red remote control supported by LCDproc.
+
