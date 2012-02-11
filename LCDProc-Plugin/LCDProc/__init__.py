@@ -33,7 +33,7 @@ from lcdproc.server import Server
 from socket import error as SocketError
 
 # ============================ Configuration Data ============================ #
-# Where the LCD display server daemon is running
+# Where the LCD display server daemon is running, usually localhost.
 LCDPROC_HOST = 'LiFi.local'
 
 # If your LCD has a keypad this dictionary specifies the keys of interest
@@ -47,7 +47,7 @@ LCDPROC_HOST = 'LiFi.local'
 # F1, F2, F3, F4, F5, Plus, Minus, Left, Right, Up, Down & Enter.
 # For IR remote control, keys specified here are only processed when the
 # plug-in screen is displayed, keys specified for the lirc plug-in are
-# processed whatever screen is displayed
+# processed whatever screen is displayed.
 keyUse = {
     "F1":"sp.do_previous()",
     "F2":"sp.playpause()",
@@ -73,14 +73,14 @@ keyUse = {
 KEY_LABELS = "|<<  ||  []   >  >>|"
 SHOW_LABELS = True
 
-# Specify where to place information on the display
+# Specify where to place information on the display.
 ALBUM_LINE = 1
 ARTIST_LINE = 2
 TITLE_LINE = 3
 TIME_LINE = 4
 LABEL_LINE = 5
 
-# Number of characters larger than the screen width to switch scrolling mode
+# Number of characters larger than the screen width to switch scrolling mode.
 BOUNCE_ROLL_THRESHOLD = 5
 DONT_SCROLL = False
 
@@ -152,6 +152,8 @@ class LCDprocPlugin(rb.Plugin):
     def deactivate(self, shell):
         self.shell = None
         sp = shell.get_player()
+        if not hasattr(self, 'pc_id'):
+            return
         sp.disconnect(self.pc_id)
         sp.disconnect(self.psc_id)
         sp.disconnect(self.pspc_id)
@@ -200,7 +202,7 @@ class LCDprocPlugin(rb.Plugin):
             self.screen2.set_priority("background")
 
     def playing_song_changed(self, sp, entry):
-#        print "Playing song changed"
+        print "Playing song changed %s" % (entry)
         if sp.get_playing():
             self.set_entry(entry)
 
