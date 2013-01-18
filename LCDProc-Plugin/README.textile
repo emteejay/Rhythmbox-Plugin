@@ -9,7 +9,7 @@ It is inspired by the "Rhythmbox LCDproc plugin":http://locoudev.0fees.net by Lo
 If you need to be compatible with the new Rhythmbox API (as of version 0.13.3) try the "lcdproc-rhythmbox plugin":https://github.com/mikerofone/lcdproc-rhythmbox.
 I plan to provide an update when the new API is available in Debian stable.
 
-h2. Features
+h3. Features
 
 Displays details of the currently playing track, text that exceeds the display width scrolls in either bouncing or rolling mode:
 * Title
@@ -38,12 +38,12 @@ bc. $ git clone git@github.com:emteejay/Rhythmbox-Plugin.git
 
 Either copy the Rhythmbox-Plugin/LCDProc folder to your Rhythmbox plugins folder:
 
-bc. $ cd Rhythmbox-Plugin
+bc. $ cd LCDProc-Plugin
 $ cp -R LCDProc ~/.gnome2/rhythmbox/plugins
 
 or symlink it directly to the folder in your local git clone: 
 
-bc. $ cd Rhythmbox-Plugin/LCDProc
+bc. $ cd LCDProc-Plugin/LCDProc
 $ ln -s `pwd` ~/.gnome2/rhythmbox/plugins/LCDproc
 
 Start Rhythmbox, goto Edit->Plugins and tick/activate "LCDproc plugin". Your display should now display information on the current track or a Rhythmbox title screen if it is not playing.
@@ -70,4 +70,4 @@ This plugin is free software: you can redistribute it and/or modify it under the
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>. (See COPYING for the licence).
+You should have received a copy of the GNU General Public License along with this program.  If not, see "The GNU license":http://www.gnu.org/licenses/. (See COPYING for the licence).
