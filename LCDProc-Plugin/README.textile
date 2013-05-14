@@ -50,7 +50,7 @@ Start Rhythmbox, goto Edit->Plugins and tick/activate "LCDproc plugin". Your dis
 
 h2. Configuration
 
-Things that can to be configured must be set in the source-code @Rhythmbox-Plugin/LCDProc/__init__.py@. The comments should explain what is needed.
+Things that can be configured must be set in the source-code @Rhythmbox-Plugin/LCDProc/__init__.py@. The comments should explain what is needed.
 
 h2. Troubleshooting
 
