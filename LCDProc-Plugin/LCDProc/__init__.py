@@ -49,6 +49,7 @@ LCDPROC_HOST = 'LiFi.local'
 # plug-in screen is displayed, keys specified for the lirc plug-in are
 # processed whatever screen is displayed.
 keyUse = {
+    # Keys for picoLCD
     "F1":"sp.do_previous()",
     "F2":"sp.playpause()",
     "F3":"sp.stop()",
@@ -70,8 +71,8 @@ keyUse = {
 
 # If your display has keys these symbols indicate the functions they perform.
 # The picoLCD has five keys below the display. 
-KEY_LABELS = "|<<  ||  []   >  >>|"
-SHOW_LABELS = True
+KEY_LABELS = "|<   ||  []   >   >|"
+SHOW_LABELS = False
 
 # Specify where to place information on the display.
 ALBUM_LINE = 1
@@ -114,12 +115,10 @@ class LCDprocPlugin(rb.Plugin):
             return False
         self.lcd.start_session()
         self.screen1 = self.lcd.add_screen("Rhythmbox")
-        self.screen1.set_priority("info")
         self.title = self.screen1.add_title_widget("Title", "Rhythmbox")
         self.label = self.screen1.add_string_widget("Label", KEY_LABELS, 1, 2)
         self.screen2 = self.lcd.add_screen("Rhythmbox-info")
         self.screen2.set_heartbeat("off")
-        self.screen2.set_priority("background")
         self.lcd.output("on")
         self.album_widget = self.screen2.add_scroller_widget("AlbumWidget", top = ALBUM_LINE, bottom = ALBUM_LINE, text = "Album")
         self.artist_widget = self.screen2.add_scroller_widget("ArtistWidget", top = ARTIST_LINE, bottom = ARTIST_LINE, text = "Artist")
@@ -137,6 +136,7 @@ class LCDprocPlugin(rb.Plugin):
         for key in keyUse.keys():
             self.lcd.add_key(key)
 
+        # Connect call-back functions to interesting events.
         self.pc_id = sp.connect('playing-changed', self.playing_changed)
         self.psc_id = sp.connect('playing-song-changed', self.playing_song_changed)
         self.pspc_id = sp.connect('playing-song-property-changed', self.playing_song_property_changed)
@@ -148,6 +148,9 @@ class LCDprocPlugin(rb.Plugin):
             self.set_entry(sp.get_playing_entry())
             self.screen1.set_priority("background")
             self.screen2.set_priority("foreground")
+        else:
+            self.screen1.set_priority("info")
+            self.screen2.set_priority("background")
 
     def deactivate(self, shell):
         self.shell = None
@@ -183,7 +186,7 @@ class LCDprocPlugin(rb.Plugin):
             bits = (response[:-1]).split(" ")
             if bits[0] == "key":
                 action = keyUse[bits[1]]
-                sp = self.shell.get_player()
+                sp = self.shell.get_player()    # Used by some actions.
                 print action
                 exec action
         gtk.gdk.threads_leave()
@@ -202,7 +205,7 @@ class LCDprocPlugin(rb.Plugin):
             self.screen2.set_priority("background")
 
     def playing_song_changed(self, sp, entry):
-        print "Playing song changed %s" % (entry)
+#        print "Playing song changed %s" % (entry)
         if sp.get_playing():
             self.set_entry(entry)
 
