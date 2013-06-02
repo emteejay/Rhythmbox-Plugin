@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python
+Module=LCDProc
+IAge=2
+Name=LCDProc
+Description=Display music details and control play-back using LCDproc
+Authors=Martin Tharby Jones
+Copyright=Copyright © 2013 Martin Tharby Jones
+Website=https://github.com/emteejay/Rhythmbox-Plugin

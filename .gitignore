@@ -1,0 +1,5 @@
+*.pyc
+*~
+/LCDProc-Plugin/.settings/org.eclipse.core.resources.prefs
+/LCDProc-Plugin/.project
+/LCDProc-Plugin/.pydevproject

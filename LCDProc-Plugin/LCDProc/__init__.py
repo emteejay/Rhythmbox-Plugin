@@ -1,10 +1,11 @@
-#
-#  Rhythmbox LCDproc plugin
-#
-# Display information about what's playing on a display controlled by LCDproc.
-#
-#  Copyright 2012 Martin Tharby Jones martin@brasskipper.org.uk
-#
+"""
+ Rhythmbox LCDProc plugin
+ 
+Display information about what's playing on a display controlled by LCDProc.
+ 
+Copyright 2013 Martin Tharby Jones martin@brasskipper.org.uk
+ 
+"""
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 2 of the License, or
@@ -25,35 +26,33 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-import rhythmdb, rb
-import gobject
-import gtk
-from lcdproc.server import Server
-from socket import error as SocketError
-
+ 
 # ============================ Configuration Data ============================ #
-# Where the LCD display server daemon is running, usually localhost.
+ 
 LCDPROC_HOST = 'LiFi.local'
-
-# If your LCD has a keypad this dictionary specifies the keys of interest
-# and what to do when they are pressed. Use an empty dictionary if there
-# is no keypad. Some possible actions are given in:
-#
-# http://live.gnome.org/RhythmboxPlugins/WritingGuide#Controlling_Playback
-#
-# For example to use the keys for the picoLCD in units such as the M300 
-# http://www.mini-box.com/Mini-Box-M300-LCD which has the following keys:
-# F1, F2, F3, F4, F5, Plus, Minus, Left, Right, Up, Down & Enter.
-# For IR remote control, keys specified here are only processed when the
-# plug-in screen is displayed, keys specified for the lirc plug-in are
-# processed whatever screen is displayed.
+# Where the LCD display server daemon is running, usually localhost.
+ 
 keyUse = {
+#    If your LCD has a keypad this dictionary specifies the keys of interest
+#    and what to do when they are pressed.
+#     
+#    Use an empty dictionary if there is no keypad. Some possible actions are given in:
+#     
+#    http://live.gnome.org/RhythmboxPlugins/WritingGuide#Controlling_Playback
+#     
+#    For example to use the keys for the picoLCD in units such as the M300 
+#    http://www.mini-box.com/Mini-Box-M300-LCD which has the following keys:
+#    F1, F2, F3, F4, F5, Plus, Minus, Left, Right, Up, Down & Enter.
+#    For IR remote control, keys specified here are only processed when the
+#    plug-in screen is displayed, keys specified for the lirc plug-in are
+#    processed whatever screen is displayed.
+     
     # Keys for picoLCD
     "F1":"sp.do_previous()",
-    "F2":"sp.playpause()",
+    "F2":"sp.playpause(True)",  # Parameter is not documented on WEB page above
     "F3":"sp.stop()",
-    "F4":"sp.play()",
+    "F4":"sp.playpause(True)",
+    # Using playpause() in place of play() which complains "Current playing source is NULL"
     "F5":"sp.do_next()",
     # Keys for picoLCD & IR remote control.
     "Plus":"sp.set_volume_relative(+0.05)",
@@ -63,60 +62,72 @@ keyUse = {
     # Keys for IR remote control.
     "Previous":"sp.do_previous()",
     "Next":"sp.do_next()",
-    "Play":"sp.play()",
-    "PlayPause":"sp.playpause()",
+    "Play":"sp.playpause(True)",
+    "PlayPause":"sp.playpause(True)",
     "Pause":"sp.pause()",
     "Stop":"sp.stop()"
 }
-
+ 
+KEY_LABELS = "|<   ||  []   >   >|"
 # If your display has keys these symbols indicate the functions they perform.
 # The picoLCD has five keys below the display. 
-KEY_LABELS = "|<   ||  []   >   >|"
 SHOW_LABELS = False
-
-# Specify where to place information on the display.
+# Should the labels be included in the whats playing information screen
+ 
 ALBUM_LINE = 1
 ARTIST_LINE = 2
 TITLE_LINE = 3
 TIME_LINE = 4
-LABEL_LINE = 5
-
-# Number of characters larger than the screen width to switch scrolling mode.
+RATING_LINE = 5
+LABEL_LINE = 6
+# Specify where to place information on the display.
+ 
 BOUNCE_ROLL_THRESHOLD = 5
+# Number of characters larger than the screen width to switch scrolling mode.
 DONT_SCROLL = False
-
+# Do long lines scroll?
+ 
 # ============================ Configuration End ============================ #
-
+ 
+import sys
+import rb
+from gi.repository import GObject, Peas, RB
+from gi._glib import GError
+from lcdproc.server import Server
+from socket import error as SocketError
+ 
 NORMAL_ARTIST = 'artist'
-NORMAL_TITLE = 'title'
-NORMAL_ALBUM = 'album'
+NORMAL_TITLE  = 'title'
+NORMAL_ALBUM  = 'album'
 STREAM_ARTIST = 'rb:stream-song-artist'
-STREAM_TITLE = 'rb:stream-song-title'
-STREAM_ALBUM = 'rb:stream-song-album'
+STREAM_TITLE  = 'rb:stream-song-title'
+STREAM_ALBUM  = 'rb:stream-song-album'
 
-class LCDprocPlugin(rb.Plugin):
+class LCDProcPlugin (GObject.Object, Peas.Activatable):
+    object = GObject.property(type=GObject.Object)
+ 
     def __init__(self):
-        rb.Plugin.__init__(self)
-
-    def activate(self, shell):
-        self.shell = shell
-        sp = shell.get_player()
+        super(LCDProcPlugin, self).__init__()
+ 
+    def do_activate(self):
+        print "Activating Plugin"
+         
         self.entry = None
         self.duration = 0
-        self.artist = ""
-        self.title = ""
-        self.album = ""
-
+        self.artist = " "
+        self.title = " "
+        self.album = " "
+ 
         # Initialise LCD
         try:
-            self.lcd = Server(LCDPROC_HOST) #, debug=True)
+            self.lcd = Server(LCDPROC_HOST, debug=True)
         except SocketError:
             print "Failed to connect to LCDd"
             return False
         self.lcd.start_session()
         self.screen1 = self.lcd.add_screen("Rhythmbox")
-        self.title = self.screen1.add_title_widget("Title", "Rhythmbox")
-        self.label = self.screen1.add_string_widget("Label", KEY_LABELS, 1, 2)
+        self.title1_widget = self.screen1.add_title_widget("Title", "Rhythmbox")
+        self.label1_widget = self.screen1.add_string_widget("Label", KEY_LABELS, 1, 2)
         self.screen2 = self.lcd.add_screen("Rhythmbox-info")
         self.screen2.set_heartbeat("off")
         self.lcd.output("on")
@@ -129,43 +140,48 @@ class LCDprocPlugin(rb.Plugin):
         if SHOW_LABELS:
             self.label_widget = self.screen2.add_string_widget("LabelWidget", KEY_LABELS, 1, LABEL_LINE)
             self.displayed_lines += 1
-
+ 
         self.bounce_roll_length = self.lcd.server_info["screen_width"] + BOUNCE_ROLL_THRESHOLD
         self.screen_width_pxl = self.lcd.server_info["screen_width"] * self.lcd.server_info["cell_width"]
-        
+         
         for key in keyUse.keys():
             self.lcd.add_key(key)
-
+ 
         # Connect call-back functions to interesting events.
+        sp = self.object.props.shell_player
         self.pc_id = sp.connect('playing-changed', self.playing_changed)
         self.psc_id = sp.connect('playing-song-changed', self.playing_song_changed)
         self.pspc_id = sp.connect('playing-song-property-changed', self.playing_song_property_changed)
         self.ec_id = sp.connect('elapsed-changed', self.elapsed_changed)
         # LCDd processes key input at 32Hz.
-        self.pollcbtag = gobject.timeout_add(1000 / 32, self.poll_cb)
-
+        self.pollcbtag = GObject.timeout_add(1000 / 32, self.poll_cb)
+        
+        print sp.get_playback_state()
         if sp.get_playing():
+            print "Activating: playing"
             self.set_entry(sp.get_playing_entry())
             self.screen1.set_priority("background")
             self.screen2.set_priority("foreground")
         else:
+            print "Activating: stopped"
             self.screen1.set_priority("info")
             self.screen2.set_priority("background")
-
-    def deactivate(self, shell):
-        self.shell = None
-        sp = shell.get_player()
+        print "Plugin Activated"
+ 
+    def do_deactivate(self):
+        print "Deactivating Plugin"
         if not hasattr(self, 'pc_id'):
             return
+        sp = self.object.props.shell_player
         sp.disconnect(self.pc_id)
         sp.disconnect(self.psc_id)
         sp.disconnect(self.pspc_id)
         sp.disconnect(self.ec_id)
-        gobject.source_remove(self.pollcbtag)
-
+        GObject.source_remove(self.pollcbtag)
+ 
         # Disconnect LCD
-        del self.title
-        del self.label
+        del self.title1_widget
+        del self.label1_widget
         del self.artist_widget
         del self.album_widget
         del self.title_widget
@@ -177,53 +193,77 @@ class LCDprocPlugin(rb.Plugin):
         del self.screen2
         self.lcd.tn.close()
         del self.lcd
-
+        print "Plugin Deactivated"
+ 
     def poll_cb(self):
-        gtk.gdk.threads_enter()
         response = self.lcd.poll()
         if response:
             print "Poll Response: %s" % (response[:-1])
             bits = (response[:-1]).split(" ")
             if bits[0] == "key":
                 action = keyUse[bits[1]]
-                sp = self.shell.get_player()    # Used by some actions.
+                sp = self.object.props.shell_player    # Used by some actions.
                 print action
-                exec action
-        gtk.gdk.threads_leave()
+                try:
+                    exec action
+                except GError as e:
+                    if e.args[0] in ('Not currently playing', 'No previous song'):
+                        print "%s safe to ignore." % e.args[0]
+                    else:
+                        print "%s unexpected." % e.args
+                        raise
+                except:
+                    print "Blast! Unexpected error:", sys.exc_info()[0]
+                    raise
         return True
-
-    def playing_changed(self, sp, playing):
+ 
+    def playing_changed(self, player, playing):
         if playing:
-#            print "Playing"
-            self.set_entry(sp.get_playing_entry())
+            print "Playing"
+            self.set_entry(player.get_playing_entry())
             self.screen1.set_priority("background")
             self.screen2.set_priority("foreground")
         else:
-#            print "Not playing"
+            print "Not playing"
             self.entry = None
             self.screen1.set_priority("info")
             self.screen2.set_priority("background")
-
-    def playing_song_changed(self, sp, entry):
-#        print "Playing song changed %s" % (entry)
-        if sp.get_playing():
+ 
+    def playing_song_changed(self, player, entry):
+        print "Playing song changed %s" % (entry)
+        if player.get_playing():
             self.set_entry(entry)
-
-    def playing_song_property_changed(self, sp, uri, song_property, old, new):
-        print "Playing song song_property (%s) changed (%s to %s)" % (song_property, old, new)
-        if sp.get_playing() and song_property in (NORMAL_ALBUM, STREAM_ALBUM):
-            self.album = new
-        elif sp.get_playing() and song_property in (NORMAL_ARTIST, STREAM_ARTIST):
-            self.artist = new
-        elif sp.get_playing() and song_property in (NORMAL_TITLE, STREAM_TITLE):
-            self.title = new
+ 
+    def playing_song_property_changed(self, player, uri, song_property, old, new):
+        print "Playing song %s property (%s) changed (%s to %s)" % (uri, song_property, old, new)
+        if player.get_playing():
+            if song_property in (NORMAL_ALBUM, STREAM_ALBUM):
+                self.album = new
+            elif song_property in (NORMAL_ARTIST, STREAM_ARTIST):
+                self.artist = new
+            elif song_property in (NORMAL_TITLE):
+                self.title = new
+            elif song_property in (STREAM_TITLE):
+                if new.count(" - ") >= 1:
+                    # contains "Artist - Title"
+                    fields = new.split(" - ",1)
+                    self.artist = fields[0]
+                    self.title = fields[1]
+                else:
+                    # only title
+                    self.title = new
+                    self.artist = ""
+                self.album = uri
+                self.duration = 0
+            else:
+                return
         else:
             return
         self.set_display()
-
+ 
     def elapsed_changed(self, player, time):
-#        print "Elapsed changed %d" % time
-        if (time >= 0 and player.get_playing()):
+#         print "Elapsed changed %d" % time
+        if (time >= 0 and self.duration > 0):
             progress = self.screen_width_pxl * time / self.duration
             self.progress_bar.set_length(progress)
             progress_str  = "%d:%02d" % (time/60, time%60)
@@ -232,20 +272,26 @@ class LCDprocPlugin(rb.Plugin):
             else:
                 self.time_widget.set_x(1)
             self.time_widget.set_text(progress_str)
+        else:
+            self.progress_bar.set_length(0)
+            self.time_widget.set_text("")
 
     def set_entry(self, entry):
-        if entry == self.entry:
+        if rb.entry_equal(entry, self.entry):
             return
         self.entry = entry
         if entry is None:
             return
-        db = self.shell.get_property("db")
-        self.rating = db.entry_get(entry, rhythmdb.PROP_RATING)
-        self.duration = db.entry_get(entry, rhythmdb.PROP_DURATION)
-        self.album = db.entry_get(entry, rhythmdb.PROP_ALBUM)
-        self.artist = db.entry_get(entry, rhythmdb.PROP_ARTIST)
-        self.title = db.entry_get(entry, rhythmdb.PROP_TITLE)
-        if entry.get_entry_type().category == rhythmdb.ENTRY_STREAM:
+        self.album = entry.get_string(RB.RhythmDBPropType.ALBUM)
+        self.artist = entry.get_string(RB.RhythmDBPropType.ARTIST)
+        self.title = entry.get_string(RB.RhythmDBPropType.TITLE)
+        self.duration = entry.get_ulong(RB.RhythmDBPropType.DURATION)
+#         sp = self.object.props.shell_player
+#         self.duration = sp.get_playing_song_duration()
+        self.rating = entry.get_double(RB.RhythmDBPropType.RATING)
+        print "Song rating %g" % self.rating
+        db = self.object.get_property("db")
+        if entry.get_entry_type().props.category == RB.RhythmDBEntryCategory.STREAM:
             if not self.album:
                 self.album = db.entry_request_extra_metadata(entry, STREAM_ALBUM)
             if not self.artist:
@@ -253,7 +299,7 @@ class LCDprocPlugin(rb.Plugin):
             if not self.title:
                 self.title = db.entry_request_extra_metadata(entry, STREAM_TITLE)
         self.set_display()
-
+ 
     def set_display(self):
         album_text = self.album
         if DONT_SCROLL:
@@ -264,7 +310,7 @@ class LCDprocPlugin(rb.Plugin):
             self.album_widget.set_direction("m")    # Roll text to show characters that don't fit
             album_text += " * "
         self.album_widget.set_text(album_text)
-
+ 
         artist_text = self.artist
         if DONT_SCROLL:
             artist_text = artist_text[0:self.lcd.server_info["screen_width"]]
@@ -274,7 +320,7 @@ class LCDprocPlugin(rb.Plugin):
             self.artist_widget.set_direction("m")
             artist_text += " * "
         self.artist_widget.set_text(artist_text)
-
+ 
         title_text = self.title
         if DONT_SCROLL:
             title_text = title_text[0:self.lcd.server_info["screen_width"]]
@@ -284,7 +330,7 @@ class LCDprocPlugin(rb.Plugin):
             self.title_widget.set_direction("m")
             title_text += " * "
         self.title_widget.set_text(title_text)
-
+ 
     def scroll(self, step):
         self.album_widget.set_top((self.album_widget.top + step) % self.displayed_lines)
         self.album_widget.set_bottom((self.album_widget.bottom + step) % self.displayed_lines)

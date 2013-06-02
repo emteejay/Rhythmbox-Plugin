@@ -6,12 +6,9 @@ This plugin enables the "Rhythmbox":http://projects.gnome.org/rhythmbox music pl
 
 It is inspired by the "Rhythmbox LCDproc plugin":http://locoudev.0fees.net by Loic Andrieu. I have replaced the thread based scrolling with LCDproc's scroller widgets and added keypad support.
 
-If you need to be compatible with the new Rhythmbox API (as of version 0.13.3) try the "lcdproc-rhythmbox plugin":https://github.com/mikerofone/lcdproc-rhythmbox.
-I plan to provide an update when the new API is available in Debian stable.
-
 h3. Features
 
-Displays details of the currently playing track, text that exceeds the display width scrolls in either bouncing or rolling mode:
+Displays details of the currently playing track, text that exceeds the display width can be configured to scroll in either bouncing or rolling mode:
 * Title
 * Artist
 * Album
@@ -24,7 +21,7 @@ Allows keypad or IR remote control of:
 
 h2. Requirements
 
-* "Rhythmbox":http://projects.gnome.org/rhythmbox  version 0.12.x
+* "Rhythmbox":http://projects.gnome.org/rhythmbox  version 2.x
 * "LCDproc":http://lcdproc.org available from "sourceforge":https://sourceforge.net/projects/lcdproc/
 * Python OOP Wrapper Library for LCDproc Telnet API version later than 2011-11-23 from "github":http://github.com/jingleman/lcdproc
 
@@ -36,27 +33,21 @@ Check out the git repository:
 
 bc. $ git clone git@github.com:emteejay/Rhythmbox-Plugin.git
 
-Either copy the Rhythmbox-Plugin/LCDProc folder to your Rhythmbox plugins folder:
+Run the install script in the Rhythmbox-Plugin/LCDProc-plugin directory:
 
-bc. $ cd LCDProc-Plugin
-$ cp -R LCDProc ~/.gnome2/rhythmbox/plugins
-
-or symlink it directly to the folder in your local git clone: 
-
-bc. $ cd LCDProc-Plugin/LCDProc
-$ ln -s `pwd` ~/.gnome2/rhythmbox/plugins/LCDproc
+bc. $ sh install.sh
 
 Start Rhythmbox, goto Edit->Plugins and tick/activate "LCDproc plugin". Your display should now display information on the current track or a Rhythmbox title screen if it is not playing.
 
 h2. Configuration
 
-Things that can be configured must be set in the source-code @Rhythmbox-Plugin/LCDProc/__init__.py@. The comments should explain what is needed.
+Things that can be configured must be set in the source-code @${HOME}/.local/share/rhythmbox/plugins/LCDProc/LCDProc/__init__.py@. The comments should explain what is needed.
 
 h2. Troubleshooting
 
 If your display does not change at all, make sure that LCDproc is really running.
 
-Launching Rhythmbox from the command line with the debug switch @rhythmbox -D LCDproc@ will enable debug output for the plugin. It will print status messages and stack traces if something goes wrong.
+Launching Rhythmbox from the command line with the debug switch @rhythmbox -D LCDProc@ will enable debug output for the plugin. It will print status messages and stack traces if something goes wrong.
 
 h2. Contact
 
@@ -64,7 +55,7 @@ Bug reports, feature requests and any other kind of feedback can be sent via the
 
 h2. Copyright
 
-Copyright (c) 2012 Martin Tharby Jones martin@brasskipper.org.uk
+Copyright (c) 2013 Martin Tharby Jones martin@brasskipper.org.uk
 
 This plugin is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any later version.
 
