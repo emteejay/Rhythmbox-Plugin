@@ -30,6 +30,7 @@ Copyright 2013 Martin Tharby Jones martin@brasskipper.org.uk
 # ============================ Configuration Data ============================ #
  
 LCDPROC_HOST = 'LiFi.local'
+#LCDPROC_HOST = 'localhost'
 # Where the LCD display server daemon is running, usually localhost.
  
 keyUse = {
@@ -131,9 +132,10 @@ class LCDProcPlugin (GObject.Object, Peas.Activatable):
         self.screen2 = self.lcd.add_screen("Rhythmbox-info")
         self.screen2.set_heartbeat("off")
         self.lcd.output("on")
-        self.album_widget = self.screen2.add_scroller_widget("AlbumWidget", top = ALBUM_LINE, bottom = ALBUM_LINE, text = "Album")
-        self.artist_widget = self.screen2.add_scroller_widget("ArtistWidget", top = ARTIST_LINE, bottom = ARTIST_LINE, text = "Artist")
-        self.title_widget = self.screen2.add_scroller_widget("TitleWidget", top = TITLE_LINE, bottom = TITLE_LINE, text = "Title")
+        width = self.lcd.server_info["screen_width"]
+        self.album_widget = self.screen2.add_scroller_widget("AlbumWidget", top = ALBUM_LINE, bottom = ALBUM_LINE, right = width, text = "Album")
+        self.artist_widget = self.screen2.add_scroller_widget("ArtistWidget", top = ARTIST_LINE, bottom = ARTIST_LINE, right = width, text = "Artist")
+        self.title_widget = self.screen2.add_scroller_widget("TitleWidget", top = TITLE_LINE, bottom = TITLE_LINE, right = width, text = "Title")
         self.progress_bar = self.screen2.add_hbar_widget("HBarWidget", x=1, y=TIME_LINE, length=0)
         self.time_widget = self.screen2.add_string_widget("TimeWidget", "", 1, TIME_LINE)
         self.displayed_lines = 4
@@ -141,8 +143,8 @@ class LCDProcPlugin (GObject.Object, Peas.Activatable):
             self.label_widget = self.screen2.add_string_widget("LabelWidget", KEY_LABELS, 1, LABEL_LINE)
             self.displayed_lines += 1
  
-        self.bounce_roll_length = self.lcd.server_info["screen_width"] + BOUNCE_ROLL_THRESHOLD
-        self.screen_width_pxl = self.lcd.server_info["screen_width"] * self.lcd.server_info["cell_width"]
+        self.bounce_roll_length = width + BOUNCE_ROLL_THRESHOLD
+        self.screen_width_pxl = width * self.lcd.server_info["cell_width"]
          
         for key in keyUse.keys():
             self.lcd.add_key(key)
@@ -330,15 +332,24 @@ class LCDProcPlugin (GObject.Object, Peas.Activatable):
             self.title_widget.set_direction("m")
             title_text += " * "
         self.title_widget.set_text(title_text)
+
+    def new_line(self, current, step):
+        print "newline %d,%d" % (current, step)
+        current += step
+        if current > self.displayed_lines:
+            return 1
+        if current == 0:
+            current = self.displayed_lines
+        return current
  
     def scroll(self, step):
-        self.album_widget.set_top((self.album_widget.top + step) % self.displayed_lines)
-        self.album_widget.set_bottom((self.album_widget.bottom + step) % self.displayed_lines)
-        self.artist_widget.set_top((self.artist_widget.top + step) % self.displayed_lines)
-        self.artist_widget.set_bottom((self.artist_widget.bottom + step) % self.displayed_lines)
-        self.title_widget.set_top((self.title_widget.top + step) % self.displayed_lines)
-        self.title_widget.set_bottom((self.title_widget.bottom + step) % self.displayed_lines)
-        self.progress_bar.set_y((self.progress_bar.y + step) % self.displayed_lines)
-        self.time_widget.set_y((self.time_widget.y + step) % self.displayed_lines)
+        self.album_widget.set_top(self.new_line(self.album_widget.top, step))
+        self.album_widget.set_bottom(self.new_line(self.album_widget.bottom, step))
+        self.artist_widget.set_top(self.new_line(self.artist_widget.top, step))
+        self.artist_widget.set_bottom(self.new_line(self.artist_widget.bottom, step))
+        self.title_widget.set_top(self.new_line(self.title_widget.top, step))
+        self.title_widget.set_bottom(self.new_line(self.title_widget.bottom, step))
+        self.progress_bar.set_y(self.new_line(self.progress_bar.y, step))
+        self.time_widget.set_y(self.new_line(self.time_widget.y, step))
         if SHOW_LABELS:
-            self.label_widget.set_y((self.label_widget.y + step) % self.displayed_lines)
+            self.label_widget.set_y(self.new_line(self.label_widget.y, step))
